@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CodePen - Sandbox tester</title>
+    <link rel='stylesheet' href='https://ui.contentstack.com/contentstack.min.css'>
+
+</head>
+
+<body>
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        body {
+            padding: 1rem;
+            max-width: 50rem;
+            margin: 0 auto;
+            background-color: #f7f9fc;
+        }
+
+        li.text-tangerine-700 {
+            list-style: circle;
+        }
+
+        li {
+            list-style: disc;
+        }
+
+        .bold {
+            font-weight: 700;
+        }
+
+        th {
+            border-bottom: 1px solid #b1bbce;
+        }
+
+        td,
+        th {
+            padding: .75rem 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            margin: 0 auto;
+            border-radius: 7px;
+            background: #eef0f3;
+        }
+
+    </style>
+    <!-- partial:index.partial.html -->
+    <h1>Sandbox test</h1>
+
+    <ul>
+        <li id="is-in-iframe" class="text-tangerine-700">Checking if the page is running inside an iframe...</li>
+    </ul>
+
+    <section id="in-iframe" class="hidden">
+        <div>
+            <h3>Following are the list of allowed sandbox</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Attribute</th>
+                        <th>Availability</th>
+                    </tr>
+                </thead>
+                <tbody id="sandbox-status">
+                </tbody>
+            </table>
+
+            <br>
+            <p><strong> If you are seeing <span class="text-tangerine-400">Unsure</span>, then host the app separately
+                    to
+                    ensure
+                    <code>allow-same-origin</code> value is applied. </strong>
+            </p>
+        </div>
+
+        <br>
+        <div>
+            <h3>Allow forms submit button</h3>
+            <p>Please ensure you have <code>addAllowFormsInExtensionIframe</code> plan enabled</p>
+            <p id="allow-form-section-status" class="text-tangerine-700">Not submitted</p>
+            <form id="allow-forms-form">
+                <input class="btn btn-primary btn-sm" type="submit" value="Submit">
+            </form>
+            <br>
+            <p><strong>Instructions</strong></p>
+            <ul>
+                <li>Add <code>addAllowFormsInExtensionIframe</code> plan to your organization</li>
+                <li>click on submit button</li>
+                <li><span class="text-tangerine-700">Not submitted</span> should change to <span
+                        class="text-parrot-700">submitted</span></li>
+            </ul>
+        </div>
+
+    </section>
+    <!-- partial -->
+    <script src='https://unpkg.com/sandblaster@1.3.0/dist/sandblaster.min.js'></script>
+    <script>
+        var sandbox = sandblaster.detect();
+
+        console.log(sandbox);
+
+        const isInIframe = document.getElementById("is-in-iframe");
+        const sandboxStatus = document.getElementById("in-iframe");
+        const sandboxBody = document.getElementById("sandbox-status");
+        /**
+         * @type HTMLFormElement
+         */
+        const allowFormsForm = document.getElementById("allow-forms-form");
+
+        if (sandbox.framed) {
+            insideIframe();
+        } else {
+            isInIframe.innerText = "Not inside an iframe";
+            isInIframe.classList.add("text-stack-red-700");
+        }
+        isInIframe.classList.remove("text-tangerine-700");
+
+        function insideIframe() {
+            isInIframe.innerText = "Running inside an iframe";
+            isInIframe.classList.add("text-parrot-700");
+
+            generateSandboxAttrList();
+            sandboxStatus.classList.remove("hidden");
+        }
+
+        function generateSandboxAttrList() {
+            const sandboxAttributes = sandbox.sandboxAllowances;
+
+            const fragment = document.createDocumentFragment();
+
+            Object.entries(sandboxAttributes).map(([attr, status]) => {
+                console.log(JSON.stringify(attr), status);
+                const tr = document.createElement("tr");
+                const attrTd = document.createElement("td");
+                const statusTd = document.createElement("td");
+                const attribute = `allow-${kebabCase(attr)}`;
+                attrTd.innerText = attribute;
+                console.log(status);
+                if (status) {
+                    statusTd.classList.add("text-parrot-500");
+                    attrTd.classList.add("bold");
+                    statusTd.innerText = "Available";
+                } else if (status === null) {
+                    statusTd.innerText = "Unsure";
+                    statusTd.classList.add("text-tangerine-500");
+                } else {
+                    statusTd.classList.add("text-stack-red-700");
+                    statusTd.innerText = "Not available";
+                }
+                tr.appendChild(attrTd);
+                tr.appendChild(statusTd);
+
+                fragment.appendChild(tr);
+            });
+            sandboxBody.appendChild(fragment);
+        }
+
+        allowFormsForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const status = document.getElementById("allow-form-section-status");
+            status.innerText = "submitted";
+            status.classList.remove("text-tangerine-700");
+            status.classList.add("text-parrot-700");
+
+            return false;
+        });
+
+        function kebabCase(str) {
+            var wordSeparators =
+                /[\s\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]+/;
+            var capital_plus_lower = /[A-ZÀ-Ý\u00C0-\u00D6\u00D9-\u00DD][a-zà-ÿ]/g;
+            var capitals = /[A-ZÀ-Ý\u00C0-\u00D6\u00D9-\u00DD]+/g;
+            str = str.replace(capital_plus_lower, function (match) {
+                return " " + (match[0].toLowerCase() || match[0]) + match[1];
+            });
+            str = str.replace(capitals, function (match) {
+                return " " + match.toLowerCase();
+            });
+            return str
+                .trim()
+                .split(wordSeparators)
+                .join("-")
+                .replace(/^-/, "")
+                .replace(/-\s*$/, "");
+        }
+
+        function submit() {
+            console.log("submitted");
+        }
+
+    </script>
+
+</body>
+
+</html>
